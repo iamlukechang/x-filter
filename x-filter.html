@@ -56,7 +56,7 @@
        *
        * @constructor
        * @private
-       * @param {object} conf Configuration object, including name, target, dataType
+       * @param conf {object} Configuration object, including name, target, dataType
        */
       function Filter(conf) {
         Polymer.mixin(this, conf);
@@ -86,7 +86,7 @@
       /**
        * Update filter properties
        *
-       * @param {object} conf 
+       * @param conf {object} 
        */
       Filter.prototype.update = function (conf) {
         if (this._fixed || typeof conf!== 'object') return;
@@ -111,9 +111,9 @@
        *                     ['foo', 1, 'bar']); // 'gelato'
        *
        * @private
-       * @param {} obj 
-       * @param {array} expression An array of string or number which represent
-       *                the target property
+       * @param obj {object | array}
+       * @param expression {array} An array of string or number which represent
+       *        the target property
        */
       function getTargetProperty(obj, expression, expressionPointer) {
         expressionPointer = expressionPointer || 0;
@@ -134,7 +134,7 @@
        */
       var checkerMixins = {
         /**
-         * @param {string} arrElem
+         * @param arrElem {string}
          * @return {boolean} Matches the filer pattern or not
          */
         string: function (arrElem) {
@@ -144,7 +144,7 @@
         },
 
         /**
-         * @param {number} arrElem
+         * @param arrElem {number}
          * @return {boolean} Matches the filer pattern or not
          */
         number: function (arrElem) {
@@ -154,7 +154,7 @@
         },
 
         /**
-         * @param {object} arrElem
+         * @param arrElem {object}
          * @return {boolean} Matches the filer pattern or not
          */
         boolean: function (arrElem) {
@@ -166,7 +166,7 @@
         },
 
         /**
-         * @param {object} arrElem
+         * @param arrElem {object}
          * @return {boolean} Matches the filer pattern or not
          */
         symbol: function () {
@@ -214,7 +214,7 @@
         /**
          * Remove a filter in this.filters array
          *
-         * @param {number} id Filter index number in this.filters array
+         * @param id {number} Filter index number in this.filters array
          */
         removeFilter: function (id) {
           this.filters.splice(id, 1);
@@ -243,8 +243,8 @@
         /**
          * Filter out an array with one filter
          *
-         * @param {number} id Filter index number in this.filters array
-         * @param {array} [arr]
+         * @param id {number} Filter index number in this.filters array
+         * @param [arr] {array}
          */
         filterOut: function (id, arr) {
           arr = arr || this.filteredArray;
@@ -260,7 +260,7 @@
         /**
          * Filter out an array with all filters
          *
-         * @param {array} [arr]
+         * @param [arr] {array}
          */
         filterOutAll: function (arr) {
           if (Array.isArray(arr)) this.filteredArray = arr;
