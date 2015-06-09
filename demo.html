@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>X Filter Demo</title>
+  <script src="bower_components/webcomponentsjs/webcomponents.min.js"></script>
+  <link rel="import" href="x-filter.html" />
+</head>
+<body>
+  <template id="auto" is="auto-binding">
+    <x-filter id="filter" filterOptions="{{filterOptions}}"></x-filter>
+    <ul>
+      <template repeat="{{data in filteredData1}}">
+        <li>foo: {{data.foo[0]}}, bar: {{data.bar}}, zar: {{data.foo[1].zar}}</li>
+      </template>
+    </ul>
+    <br />
+    <ul>
+      <template repeat="{{data in filteredData2}}">
+        <li>{{print(data)}}</li>
+      </template>
+    </ul>
+    <button on-click="{{runFilter}}">Run filter!</button>
+  </template>
+  <script>
+    var t = document.querySelector('template#auto');
+
+    t.filterOptions = [
+      {name: 'foo', title: 'FOO', target: ['foo', 0], dataType: 'string' },
+      {name: 'bar', title: 'BAR', target: ['bar'], dataType: 'number', inputType: 'number'},
+      {name: 'zar', target: ['foo', 1, 'zar'], dataType: 'boolean', inputType: 'checkbox'}
+    ];
+
+    t.data1 = [
+      {foo: ['banana', {zar: false}], bar: 1},
+      {foo: ['gelato', {zar: true}], bar: 1},
+      {foo: ['babble', {zar: true}], bar: 0}
+    ];
+
+    t.data2 = [
+      {foo: ['gelato', {zar: true}], bar: 1},
+      {foo: ['banana', {zar: false}], bar: 0},
+      {foo: ['banana', {zar: true}], bar: 1}
+    ];
+
+    t.runFilter = function () {
+      t.filteredData1 = t.$.filter.filterOutAll(t.data1);
+      t.filteredData2 = t.$.filter.filterOutAll(t.data2);
+    };
+
+    t.print = function (obj) {
+      return JSON.stringify(obj);
+    };
+  </script>
+</body>
+</html>

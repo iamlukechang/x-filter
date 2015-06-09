@@ -1,0 +1,8 @@
+:host li {
+  border-top: 1px solid #ccc;
+}
+
+:host li.fixed {
+  background: #aaa;
+}
+

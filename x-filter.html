@@ -1,0 +1,308 @@
+<!--
+/**
+ * <x-filter></x-filter>
+ *
+ * @author iamlukechang@gmail.com (Luke Chang)
+ */
+-->
+
+<link rel="import" href="../polymer/polymer.html" />
+<link rel="import" href="../core-icon-button/core-icon-button.html" />
+<link rel="import" href="../x-input/x-input.html" />
+
+<polymer-element name="x-filter" attributes="filterOptions attachedArray filteredArray">
+  <template>
+    <link rel="stylesheet" href="x-filter.css">
+
+    <!--refresh button-->
+    <core-icon-button icon="refresh" title="refresh" on-click="{{refresh}}"></core-icon-button>
+
+    <!--clear all button-->
+    <core-icon-button icon="delete" title="clear all" on-click="{{clearAllFilters}}"></core-icon-button>
+
+    <!--filter list-->
+    <ul>
+      <template repeat="{{filter, idx in filters}}">
+        <li class="{{filter._fixed ? 'fixed' : ''}}">
+          <!--remove button-->
+          <template if="{{filter._fixed}}">
+            <core-icon-button icon="delete" title="remove" on-click="{{handleRemoveFilterButtonClick}}" data-idx="{{idx}}"></core-icon-button>
+          </template>
+
+          <!--add button-->
+          <template if="{{!filter._fixed}}">
+            <core-icon-button icon="add" title="add" on-click="{{handleAddFilterButtonClick}}" data-idx="{{idx}}"></core-icon-button>
+          </template>
+
+          <!--filter option select-->
+          <template if="{{filterOptions.length > 1}}">
+            <select on-change="{{handleFilterSelectorChange}}" data-idx="{{idx}}" disabled?="{{filter._fixed}}">
+              <template repeat="{{opt, optIdx in filterOptions}}">
+                <option value="{{optIdx}}">{{opt.title || opt.name}}</option>
+              </template>
+            </select>
+          </template>
+
+          <!--filter pattern input-->
+          <x-input value="{{filter.pattern}}" type="{{filter.inputType}}" aliases="{{filter.aliases}}" disabled="{{filter._fixed}}"></x-input>
+        </li>
+      </template>
+    </ul>
+  </template>
+  <script>
+    (function () {
+      /**
+       * Filter constructor
+       *
+       * @constructor
+       * @private
+       * @param {object} conf Configuration object, including name, target, dataType
+       */
+      function Filter(conf) {
+        Polymer.mixin(this, conf);
+
+        this.target = this.target || [];
+        this.pattern = null; //TODO: allow regular expression
+        this._fixed = false;
+      }
+
+      /**
+       * Check if input data of this type matchs the pattern
+       *
+       * @ getter check
+       * @ return {function} A function from checkerMixins
+       */
+      Object.defineProperty(Filter.prototype, 'check', {
+        get: function () {
+          return checkerMixins[this.dataType];
+        }
+      });
+
+      /**
+       * Default input type
+       */
+      Filter.prototype.inputType = 'text';
+
+      /**
+       * Update filter properties
+       *
+       * @param {object} conf 
+       */
+      Filter.prototype.update = function (conf) {
+        if (this._fixed || typeof conf!== 'object') return;
+
+        Polymer.mixin(this, conf);
+      };
+
+
+      /**
+       * Fix this filter
+       */
+      Filter.prototype.fix = function () {
+        this._fixed = true;
+      };
+
+      /**
+       * Recursively get the target property value in an object, used in each
+       * checker to get the target value which is going to be compared
+       *
+       * Ex:
+       *   getTargetProperty({foo: [{bar: 'banana'}, {bar: 'gelato'}, ...]},
+       *                     ['foo', 1, 'bar']); // 'gelato'
+       *
+       * @private
+       * @param {} obj 
+       * @param {array} expression An array of string or number which represent
+       *                the target property
+       */
+      function getTargetProperty(obj, expression, expressionPointer) {
+        expressionPointer = expressionPointer || 0;
+
+        var key = expression[expressionPointer];
+
+        if (typeof obj !== 'object' || obj === null || typeof key === 'undefined') {
+          return obj;
+        } else {
+          return getTargetProperty(obj[key], expression, expressionPointer + 1);
+        }
+      }
+
+      /**
+       * Mixin provides methods for filter instance
+       *
+       * @private
+       */
+      var checkerMixins = {
+        /**
+         * @param {string} arrElem
+         * @return {boolean} Matches the filer pattern or not
+         */
+        string: function (arrElem) {
+          var targetValue = getTargetProperty(arrElem, this.target);
+
+          return !!targetValue && targetValue.search(this.pattern) >= 0;
+        },
+
+        /**
+         * @param {number} arrElem
+         * @return {boolean} Matches the filer pattern or not
+         */
+        number: function (arrElem) {
+          var targetValue = getTargetProperty(arrElem, this.target);
+
+          return Number(targetValue) == Number(this.pattern);
+        },
+
+        /**
+         * @param {object} arrElem
+         * @return {boolean} Matches the filer pattern or not
+         */
+        boolean: function (arrElem) {
+          var targetValue = getTargetProperty(arrElem, this.target);
+          // TODO: use string to define boolean for now, switch to x-input later
+          var pattern = (this.pattern == 'false') ? false : this.pattern;
+
+          return !!targetValue === !!pattern;
+        },
+
+        /**
+         * @param {object} arrElem
+         * @return {boolean} Matches the filer pattern or not
+         */
+        symbol: function () {
+          //TODO: implement symbol checker
+        }
+      };
+
+      Polymer({
+        /**
+         * An array to store all instances of Filter
+         */
+        filters: [],
+
+        /**
+         * The original un-filtered array
+         */
+        attachedArray: [],
+
+        /**
+         * An array host the filterd result
+         */
+        filteredArray: [],
+
+        attachedArrayChanged: function () {
+          this.refresh();
+        },
+
+        /**
+         * Clear all filters and insert a new one into this.filters array
+         */
+        filterOptionsChanged: function () {
+          this.clearAllFilters();
+        },
+
+        /**
+         * Make a new instance of Filter of the first filter option, and push
+         * it into this.filters
+         */
+        createEmptyFilter: function () {
+          var firstOption = this.filterOptions[0];
+
+          this.filters.push(new Filter(firstOption));
+        },
+
+        /**
+         * Remove a filter in this.filters array
+         *
+         * @param {number} id Filter index number in this.filters array
+         */
+        removeFilter: function (id) {
+          this.filters.splice(id, 1);
+
+          this.refresh();
+        },
+
+        /**
+         * Empty this.filters array
+         */
+        clearAllFilters: function () {
+          this.filters = [];
+
+          this.refresh();
+          this.createEmptyFilter();
+        },
+
+        /**
+         * Reset this.filteredArray and filter out with all filters
+         */
+        refresh: function () {
+          this.filteredArray = this.attachedArray.slice(); 
+          this.filterOutAll();
+        },
+
+        /**
+         * Filter out an array with one filter
+         *
+         * @param {number} id Filter index number in this.filters array
+         * @param {array} [arr]
+         */
+        filterOut: function (id, arr) {
+          arr = arr || this.filteredArray;
+          var filter = this.filters[id];
+
+          if (!filter || !filter.pattern) return arr;
+
+          return this.filteredArray = arr.filter(function (el) {
+            return filter.check(el);
+          });
+        },
+
+        /**
+         * Filter out an array with all filters
+         *
+         * @param {array} [arr]
+         */
+        filterOutAll: function (arr) {
+          if (Array.isArray(arr)) this.filteredArray = arr;
+
+          for (var i = 0; i < this.filters.length; i++) {
+            this.filterOut(i);
+          }
+
+          return this.filteredArray;
+        },
+
+        /**
+         * Update the filter's name, type properties
+         */
+        handleFilterSelectorChange: function (event, detail, sender) {
+          var filter = this.filters[sender.dataset.idx];
+          var option = this.filterOptions[sender.value];
+
+          filter.update(option);
+        },
+
+        /**
+         * Fix a filter
+         */
+        handleAddFilterButtonClick: function (event, detail, sender) {
+          var id = sender.dataset.idx;
+          
+          this.filters[id].fix();
+          this.fire('add');
+
+          if (this.filteredArray.length > 0) this.filterOut(id);
+
+          this.createEmptyFilter();
+        },
+
+        /**
+         * Remove a filter in this.filters array
+         */
+        handleRemoveFilterButtonClick: function (event, detail, sender) {
+          this.removeFilter(sender.dataset.idx);
+        }
+      });
+    })();
+  </script>
+</polymer-element>
